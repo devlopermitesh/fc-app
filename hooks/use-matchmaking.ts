@@ -18,6 +18,7 @@ type MatchmakingStatus = "idle" | "connecting" | "searching" | "error";
 
 type UseMatchmakingOptions = {
   enabled: boolean;
+  sessionToken?: string;
   onMatchFound?: () => void;
 };
 
@@ -55,6 +56,7 @@ const mapErrorMessage = (message?: string) => {
 
 export function useMatchmaking({
   enabled,
+  sessionToken,
   onMatchFound,
 }: UseMatchmakingOptions) {
   const router = useRouter();
@@ -94,6 +96,7 @@ export function useMatchmaking({
         roomId: payload.roomId,
         matchedUserId: payload.matchedUser.userId,
         matchedUsername: payload.matchedUser.username,
+        sessionToken,
       }),
     );
     onMatchFound?.();
@@ -110,9 +113,14 @@ export function useMatchmaking({
       return;
     }
 
+    if (!sessionToken) {
+      failMatchmaking(EXPIRED_SESSION_MESSAGE);
+      return;
+    }
+
     hasStartedRef.current = true;
     setPhase("searching");
-    startMatchmaking(connectSocket(), (response) => {
+    startMatchmaking(connectSocket(sessionToken), (response) => {
       const parsedAck = startMatchmakingAckSchema.safeParse(response);
 
       if (!parsedAck.success) {
@@ -151,7 +159,12 @@ export function useMatchmaking({
       return;
     }
 
-    const socket = connectSocket();
+    if (!sessionToken) {
+      failMatchmaking(EXPIRED_SESSION_MESSAGE);
+      return;
+    }
+
+    const socket = connectSocket(sessionToken);
     hasStartedRef.current = false;
     hasNavigatedRef.current = false;
 
@@ -213,7 +226,9 @@ export function useMatchmaking({
     socket.on(MATCHMAKING_EVENTS.ERROR, handleMatchError);
 
     if (socket.connected) {
-      beginMatchmaking();
+      queueMicrotask(() => {
+        beginMatchmaking();
+      });
     }
 
     return () => {
@@ -225,7 +240,7 @@ export function useMatchmaking({
       socket.off(MATCHMAKING_EVENTS.ERROR, handleMatchError);
       disconnectSocket();
     };
-  }, [enabled, retryKey]);
+  }, [enabled, retryKey, sessionToken]);
 
   const retry = () => {
     setPhase("idle");

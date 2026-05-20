@@ -44,6 +44,7 @@ export default function MatchModel() {
   const [progress, setProgress] = useState(34);
   const { errorMessage, retry, status } = useMatchmaking({
     enabled: isOpen && modelType === "matchModel",
+    sessionToken: data.sessionToken,
     onMatchFound: onClose,
   });
   const tags = useMemo(() => summarizeFantasyTags(data.fantasy), [data.fantasy]);

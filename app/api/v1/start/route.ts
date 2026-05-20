@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 import { ApiError } from "@/utils/apiError";
@@ -50,13 +49,6 @@ const userRecord:AuthenticatedUser={
 
 await redis.set(`user:${userId}`,userRecord,{ex:env.SESSION_TTL_SECONDS ?? 1600})
 await redis.set(`session:${sessionToken}`,{userId,createdAt:now},{ex:env.SESSION_TTL_SECONDS ?? 1600})
-const cookieStore=await cookies()
-cookieStore.set(env.SESSION_COOKIE_NAME ?? "fantasychat_session",sessionToken,{
-  httpOnly:true,
-  secure:process.env.NODE_ENV ==='production',
-  path:'/',
-  maxAge:env.SESSION_TTL_SECONDS
-})
-const response=new ApiResponse(201,{user:userRecord,sessionExpireIn:env.SESSION_TTL_SECONDS},"Session created Successfully")
+const response=new ApiResponse(201,{user:userRecord,sessionToken,sessionExpireIn:env.SESSION_TTL_SECONDS},"Session created Successfully")
 return NextResponse.json(response,{status:response.statusCode})
 })

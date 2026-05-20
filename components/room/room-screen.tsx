@@ -21,6 +21,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     roomId?: string;
     matchedUserId?: string;
     matchedUsername?: string;
+    sessionToken?: string;
   } | null>(null);
   const {
     errorMessage,
@@ -34,7 +35,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
     status,
     syncTyping,
     typingParticipant,
-  } = useRoomChat(roomId);
+  } = useRoomChat(roomId, storedMatchData?.sessionToken);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -50,6 +51,7 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           roomId?: string;
           matchedUserId?: string;
           matchedUsername?: string;
+          sessionToken?: string;
         };
 
         setStoredMatchData(parsedValue.roomId === roomId ? parsedValue : null);

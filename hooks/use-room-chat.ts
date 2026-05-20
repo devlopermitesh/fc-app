@@ -48,7 +48,7 @@ const mapRoomErrorMessage = (message?: string) => {
   return JOIN_ERROR_MESSAGE;
 };
 
-export function useRoomChat(roomId: string) {
+export function useRoomChat(roomId: string, sessionToken?: string) {
   const [status, setStatus] = useState<RoomStatus>("connecting");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [room, setRoom] = useState<RoomJoinedPayload | null>(null);
@@ -81,7 +81,12 @@ export function useRoomChat(roomId: string) {
   }, []);
 
   const hydrateRoom = useCallback(() => {
-    joinRoom(connectSocket(), { roomId }, (response) => {
+    if (!sessionToken) {
+      failRoom(SESSION_ERROR_MESSAGE);
+      return;
+    }
+
+    joinRoom(connectSocket(sessionToken), { roomId }, (response) => {
       const parsedAck = joinRoomAckSchema.safeParse(response);
 
       if (!parsedAck.success) {
@@ -96,7 +101,7 @@ export function useRoomChat(roomId: string) {
 
       handleRoomSnapshot(parsedAck.data.data);
     });
-  }, [failRoom, handleRoomSnapshot, roomId]);
+  }, [failRoom, handleRoomSnapshot, roomId, sessionToken]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -107,7 +112,12 @@ export function useRoomChat(roomId: string) {
   }, []);
 
   useEffect(() => {
-    const socket = connectSocket();
+    if (!sessionToken) {
+      failRoom(SESSION_ERROR_MESSAGE);
+      return;
+    }
+
+    const socket = connectSocket(sessionToken);
 
     const handleConnect = () => {
       hydrateRoom();
@@ -284,10 +294,15 @@ export function useRoomChat(roomId: string) {
       socket.off(ROOM_EVENTS.TYPING_STOPPED, handleTypingStopped);
       socket.off(ROOM_EVENTS.ERROR, handleChatError);
     };
-  }, [failRoom, handleRoomSnapshot, hydrateRoom, roomId]);
+  }, [failRoom, handleRoomSnapshot, hydrateRoom, roomId, sessionToken]);
 
   const syncTyping = (draft: string) => {
-    const socket = connectSocket();
+    if (!sessionToken) {
+      failRoom(SESSION_ERROR_MESSAGE);
+      return;
+    }
+
+    const socket = connectSocket(sessionToken);
     const hasText = draft.trim().length > 0;
 
     if (hasText && !isTypingRef.current) {
@@ -321,10 +336,15 @@ export function useRoomChat(roomId: string) {
     }
 
     setIsSending(true);
-    emitTypingStop(connectSocket(), { roomId });
+    if (!sessionToken) {
+      failRoom(SESSION_ERROR_MESSAGE);
+      return false;
+    }
+
+    emitTypingStop(connectSocket(sessionToken), { roomId });
     isTypingRef.current = false;
 
-    sendRoomMessage(connectSocket(), { roomId, text: trimmedText }, (response) => {
+    sendRoomMessage(connectSocket(sessionToken), { roomId, text: trimmedText }, (response) => {
       const parsedAck = sendMessageAckSchema.safeParse(response);
 
       if (!parsedAck.success) {

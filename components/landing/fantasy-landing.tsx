@@ -228,6 +228,17 @@ export default function FantasyLanding() {
         return;
       }
 
+      const sessionToken = payload?.data?.sessionToken;
+
+      if (typeof sessionToken !== "string" || sessionToken.length === 0) {
+        showToast({
+          title: "Unable to begin matching",
+          description: "Session token was missing from the server response.",
+          variant: "error",
+        });
+        return;
+      }
+
       reset();
       setAnimatedPrompt("");
       setIsDeleting(false);
@@ -236,6 +247,7 @@ export default function FantasyLanding() {
       onOpen("matchModel", {
         username: result.data.username,
         fantasy: result.data.fantasy,
+        sessionToken,
       });
       showToast({
         title: "Your fantasy has been sent",

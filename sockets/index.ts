@@ -15,7 +15,6 @@ export const getSocket = () => {
     socket = io(buildNamespaceUrl(env.NEXT_PUBLIC_SOCKET_URL!), {
       autoConnect: false,
       reconnection: true,
-      withCredentials: true,
       path: "/socket.io",
     });
   }

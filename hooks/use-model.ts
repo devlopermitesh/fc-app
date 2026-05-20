@@ -5,6 +5,7 @@ export type ModelType = "matchModel";
 export type Modeldata = {
   username?: string;
   fantasy?: string;
+  sessionToken?: string;
 };
 
 interface UseModelProps {

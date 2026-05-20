@@ -36,10 +36,21 @@ const parseBearerToken=(req:Request)=>{
   }
 return token
 }
+
+const parseTokenFromSearchParams = (req: Request) => {
+  const requestUrl = new URL(req.url)
+
+  return requestUrl.searchParams.get("token")
+}
+
 function readSessionToken(req:Request){
 const bearerToken=parseBearerToken(req)
 if(bearerToken){
   return bearerToken
+}
+const tokenFromParams=parseTokenFromSearchParams(req)
+if(tokenFromParams){
+  return tokenFromParams
 }
 const cookiesHeader=req.headers.get("cookie")
 if(!cookiesHeader){
@@ -74,7 +85,6 @@ export async function requireAuthenticatedUser(request: Request) {
 
   return user;
 }
-
 
 
 
