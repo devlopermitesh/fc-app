@@ -1,3 +1,5 @@
+import type { CategoryName } from "@/seed/constant/category.constant";
+
 export type MatchStatus = "idle" | "waiting" | "matched";
 
 export type AuthenticatedUser = {
@@ -8,7 +10,7 @@ export type AuthenticatedUser = {
   createdAt: string;
   attempScore: number;
   mask: string;
-  tags: string[];
+  tags: CategoryName[];
   queue: string | null;
   status: MatchStatus;
   categoryRoom: string | null;

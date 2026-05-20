@@ -1,31 +1,16 @@
-// "use client";
+"use client";
 
-// import React, { useEffect } from "react";
-// import { connectSocket, disconnectSocket } from "@/sockets/connect";
-// function SocketProvider({ children }: { children: React.ReactNode }) {
-// //todo: use to fetch token from cookies name is SessioncookiesName
-// //handle is isSignin with check sesion avaiablity and not expire
-//   useEffect(() => {
-//     let active = true;
-//     async function handleSocket() {
-//       if (isSignedIn) {
-//         const token = await getToken();
+import React, { useEffect } from "react";
+import { disconnectSocket } from "@/sockets/connect";
 
-//         if (token && active) {
-//           connectSocket(token);
-//         }
-//       } else {
-//         disconnectSocket();
-//       }
-//     }
+function SocketProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
 
-//     handleSocket();
+  return <>{children}</>;
+}
 
-//     return () => {
-//       active = false;
-//     };
-//   }, [isSignedIn]);
-
-//   return <>{children}</>;
-// }
-// export default SocketProvider;
+export default SocketProvider;

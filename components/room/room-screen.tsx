@@ -1,108 +1,130 @@
 "use client";
 
-import { startTransition, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { RoomComposer } from "./room-composer";
 import { RoomHeader } from "./room-header";
 import { RoomMessageList } from "./room-message-list";
-import type { RoomMessage } from "./room.types";
-
-const initialMessages: RoomMessage[] = [
-  {
-    id: "m-1",
-    author: "match",
-    body: "The moon looks particularly intense tonight. Do you ever feel like the stars only get loud in the strange hours?",
-    timestamp: "11:05 pm",
-  },
-  {
-    id: "m-2",
-    author: "you",
-    body: "I do. It feels like the kind of silence you only notice once the world has fallen asleep.",
-    timestamp: "11:06 pm",
-    emphasis: "gold",
-  },
-  {
-    id: "m-3",
-    author: "match",
-    body: "I think so too. The world moves slower, and it feels like secrets have room to breathe then.",
-    timestamp: "11:07 pm",
-  },
-  {
-    id: "m-4",
-    author: "system",
-    body: "matched successfully",
-    timestamp: "11:07 pm",
-  },
-  {
-    id: "m-5",
-    author: "you",
-    body: "Maybe it is easier when you're just a voice out here. No names, just words.",
-    timestamp: "11:08 pm",
-    emphasis: "gold",
-  },
-];
-
-const replyPool = [
-  "That kind of mystery is exactly why I stayed in this room a little longer.",
-  "It feels easier to be honest when the night keeps the edges of everything soft.",
-  "You write like you already know the scene before it happens.",
-];
+import { useRoomChat } from "@/hooks/use-room-chat";
 
 type RoomScreenProps = {
   roomId: string;
 };
 
-const formatTimestamp = () =>
-  new Date().toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+const ROOM_MATCH_STORAGE_KEY = "fantasychat:last-match";
 
 export function RoomScreen({ roomId }: RoomScreenProps) {
-  const [messages, setMessages] = useState(initialMessages);
+  const router = useRouter();
   const [draft, setDraft] = useState("");
-  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const [storedMatchData, setStoredMatchData] = useState<{
+    roomId?: string;
+    matchedUserId?: string;
+    matchedUsername?: string;
+  } | null>(null);
+  const {
+    errorMessage,
+    isPartnerTyping,
+    isReady,
+    isSending,
+    messages,
+    participants,
+    retry,
+    sendMessage,
+    status,
+    syncTyping,
+    typingParticipant,
+  } = useRoomChat(roomId);
 
-  const nextReply = useMemo(
-    () => replyPool[messages.length % replyPool.length]!,
-    [messages.length],
-  );
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const rawValue = window.sessionStorage.getItem(ROOM_MATCH_STORAGE_KEY);
 
-  const sendMessage = () => {
-    const content = draft.trim();
+      if (!rawValue) {
+        setStoredMatchData(null);
+        return;
+      }
 
-    if (!content) {
-      return;
-    }
+      try {
+        const parsedValue = JSON.parse(rawValue) as {
+          roomId?: string;
+          matchedUserId?: string;
+          matchedUsername?: string;
+        };
 
-    const outgoingMessage: RoomMessage = {
-      id: `message-${crypto.randomUUID()}`,
-      author: "you",
-      body: content,
-      timestamp: formatTimestamp(),
-      emphasis: "gold",
+        setStoredMatchData(parsedValue.roomId === roomId ? parsedValue : null);
+      } catch {
+        setStoredMatchData(null);
+      }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
     };
+  }, [roomId]);
 
-    startTransition(() => {
-      setMessages((current) => [...current, outgoingMessage]);
+  const matchedParticipant =
+    participants.find(
+      (participant) => participant.userId === storedMatchData?.matchedUserId,
+    ) ?? participants[0];
+
+  const currentUser =
+    participants.find(
+      (participant) => participant.userId !== storedMatchData?.matchedUserId,
+    ) ?? null;
+
+  const handleSend = () => {
+    const didSend = sendMessage(draft);
+
+    if (didSend) {
       setDraft("");
-      setIsPartnerTyping(true);
-    });
-
-    window.setTimeout(() => {
-      const incomingMessage: RoomMessage = {
-        id: `message-${crypto.randomUUID()}`,
-        author: "match",
-        body: nextReply,
-        timestamp: formatTimestamp(),
-      };
-
-      startTransition(() => {
-        setMessages((current) => [...current, incomingMessage]);
-        setIsPartnerTyping(false);
-      });
-    }, 1400);
+    }
   };
+
+  const handleDraftChange = (value: string) => {
+    setDraft(value);
+    syncTyping(value);
+  };
+
+  const handleLeave = () => {
+    router.push("/");
+  };
+
+  if (status === "error") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#0f0f0f_0%,#090909_100%)] px-6 text-foreground">
+        <div className="w-full max-w-lg rounded-[2rem] border border-red-400/16 bg-[linear-gradient(180deg,rgba(109,25,25,0.25),rgba(26,9,9,0.72))] px-8 py-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
+          <p className="text-xs uppercase tracking-[0.35em] text-red-200/72">
+            Room unavailable
+          </p>
+          <h1 className="mt-4 font-display text-3xl font-semibold text-white">
+            Unable to load this chat right now
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-white/64">
+            {errorMessage}
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={retry}
+              className="rounded-full bg-[linear-gradient(90deg,#f6c400_0%,#ff9900_100%)] px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#140d02]"
+            >
+              Retry room
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="rounded-full border border-white/12 bg-white/[0.03] px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white/74"
+            >
+              Back home
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const showLoadingState = status === "connecting" || !isReady;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_bottom,rgba(246,196,0,0.14),transparent_22%),linear-gradient(180deg,#0f0f0f_0%,#090909_100%)] px-0 text-foreground">
@@ -114,16 +136,44 @@ export function RoomScreen({ roomId }: RoomScreenProps) {
           className="relative flex min-h-screen flex-col overflow-hidden border-x border-white/6 bg-[linear-gradient(180deg,rgba(19,19,19,0.98),rgba(10,10,10,1)_100%)] shadow-[0_50px_120px_rgba(0,0,0,0.55)]"
         >
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_12%),radial-gradient(circle_at_80%_20%,rgba(246,196,0,0.08),transparent_18%)]" />
-          <RoomHeader roomId={roomId} matchName="Lunar Veil" />
-          <RoomMessageList
-            messages={messages}
-            isPartnerTyping={isPartnerTyping}
+          <RoomHeader
+            roomId={roomId}
+            matchName={
+              matchedParticipant?.username ??
+              storedMatchData?.matchedUsername ??
+              "Connecting"
+            }
+            onLeave={handleLeave}
           />
+
+          {showLoadingState ? (
+            <div className="flex flex-1 items-center justify-center px-6">
+              <div className="text-center">
+                <div className="mx-auto h-12 w-12 animate-spin rounded-full border border-gold/18 border-t-gold" />
+                <p className="mt-5 text-sm uppercase tracking-[0.3em] text-white/38">
+                  Preparing room
+                </p>
+              </div>
+            </div>
+          ) : (
+            <RoomMessageList
+              currentUserId={currentUser?.userId ?? null}
+              messages={messages}
+              isPartnerTyping={isPartnerTyping}
+              typingParticipantName={typingParticipant?.username}
+            />
+          )}
+
           <RoomComposer
             draft={draft}
-            onDraftChange={setDraft}
-            onSend={sendMessage}
-            disabled={isPartnerTyping}
+            onDraftChange={handleDraftChange}
+            onSend={handleSend}
+            disabled={!isReady || isSending}
+            placeholder={
+              isSending
+                ? "Sending message..."
+                : "Write your story line here..."
+            }
           />
         </motion.section>
       </div>

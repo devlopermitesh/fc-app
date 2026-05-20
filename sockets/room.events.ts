@@ -1,0 +1,15 @@
+export const ROOM_EVENTS = {
+  JOIN: "join-room",
+  JOINED: "room-joined",
+  LEAVE: "leave-room",
+  LEFT: "room-left",
+  USER_JOINED: "room-user-joined",
+  USER_LEFT: "room-user-left",
+  SEND_MESSAGE: "send-message",
+  NEW_MESSAGE: "new-message",
+  TYPING_START: "typing-start",
+  TYPING_STOP: "typing-stop",
+  TYPING_STARTED: "typing-started",
+  TYPING_STOPPED: "typing-stopped",
+  ERROR: "chat-error",
+} as const;

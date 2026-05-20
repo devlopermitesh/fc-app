@@ -1,27 +1,22 @@
 import { getSocket } from "./index";
 
-let isConnected = false;
+export function connectSocket(token?: string | null) {
+  const socket = getSocket();
 
-export function connectSocket(token?: string) {
-    const socket = getSocket();
-
-    if (isConnected) return socket;
-
-    if (token) {
-        socket.auth = { token };
-    }
-
-    socket.connect();
-    isConnected = true;
-
+  if (socket.connected) {
     return socket;
+  }
+
+  socket.auth = token ? { token } : {};
+  socket.connect();
+
+  return socket;
 }
 
 export function disconnectSocket() {
-    const socket = getSocket();
+  const socket = getSocket();
 
-    if (socket.connected) {
-        socket.disconnect();
-        isConnected = false;
-    }
+  if (socket.connected) {
+    socket.disconnect();
+  }
 }

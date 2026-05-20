@@ -1,34 +1,48 @@
-import { Socket } from 'socket.io-client'
-import type { MessageType } from './type'
+import type {
+  JoinRoomAck,
+  LeaveRoomAck,
+  SendMessageAck,
+  StartMatchmakingAck,
+} from "./socket.types";
+import { MATCHMAKING_EVENTS } from "./matchmaking.events";
+import { ROOM_EVENTS } from "./room.events";
+import { Socket } from "socket.io-client";
 
-export function sendMessage(
+export function startMatchmaking(
   socket: Socket,
-  payload: {
-    content: string
-    type: MessageType
-    roomId:string
-  }
+  ack?: (response: StartMatchmakingAck) => void,
 ) {
-  socket.emit('chat:sendmessage', payload)
+  socket.emit(MATCHMAKING_EVENTS.START, ack);
 }
 
-export function joinChat(socket: Socket, payload: { roomId: string; message: string }) {
-  socket.emit('chat:join', payload)
-}
-export function leaveChat(socket: Socket, payload: { roomId: string; message: string }) {
-  socket.emit('chat:leave', payload)
+export function joinRoom(
+  socket: Socket,
+  payload: { roomId?: string },
+  ack?: (response: JoinRoomAck) => void,
+) {
+  socket.emit(ROOM_EVENTS.JOIN, payload, ack);
 }
 
-// export function startTyping(socket: Socket, payload: { roomId: string; memberId: string }) {
-//   socket.emit('chat:typing-start', {
-//     roomId: payload.roomId,
-//     memberId: payload.memberId,
-//   })
-// }
+export function leaveRoom(
+  socket: Socket,
+  payload: { roomId?: string },
+  ack?: (response: LeaveRoomAck) => void,
+) {
+  socket.emit(ROOM_EVENTS.LEAVE, payload, ack);
+}
 
-// export function stopTyping(socket: Socket, payload: { roomId: string; memberId: string }) {
-//   socket.emit('chat:typing-stop', {
-//     roomId: payload.roomId,
-//     memberId: payload.memberId,
-//   })
-// }
+export function sendRoomMessage(
+  socket: Socket,
+  payload: { roomId: string; text: string },
+  ack?: (response: SendMessageAck) => void,
+) {
+  socket.emit(ROOM_EVENTS.SEND_MESSAGE, payload, ack);
+}
+
+export function emitTypingStart(socket: Socket, payload: { roomId?: string }) {
+  socket.emit(ROOM_EVENTS.TYPING_START, payload);
+}
+
+export function emitTypingStop(socket: Socket, payload: { roomId?: string }) {
+  socket.emit(ROOM_EVENTS.TYPING_STOP, payload);
+}

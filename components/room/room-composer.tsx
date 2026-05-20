@@ -7,6 +7,7 @@ type RoomComposerProps = {
   onDraftChange: (value: string) => void;
   onSend: () => void;
   disabled?: boolean;
+  placeholder?: string;
 };
 
 export function RoomComposer({
@@ -14,6 +15,7 @@ export function RoomComposer({
   onDraftChange,
   onSend,
   disabled = false,
+  placeholder = "Write your story line here...",
 }: RoomComposerProps) {
   return (
     <motion.div
@@ -38,7 +40,7 @@ export function RoomComposer({
               }
             }}
             disabled={disabled}
-            placeholder="Write your story line here..."
+            placeholder={placeholder}
             className="w-full bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-white/24 disabled:cursor-not-allowed sm:text-[15px]"
           />
         </label>

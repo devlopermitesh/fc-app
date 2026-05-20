@@ -5,9 +5,10 @@ import { motion } from "framer-motion";
 type RoomHeaderProps = {
   roomId: string;
   matchName: string;
+  onLeave?: () => void;
 };
 
-export function RoomHeader({ roomId, matchName }: RoomHeaderProps) {
+export function RoomHeader({ roomId, matchName, onLeave }: RoomHeaderProps) {
   return (
     <motion.header
       initial={{ opacity: 0, y: -18 }}
@@ -38,6 +39,7 @@ export function RoomHeader({ roomId, matchName }: RoomHeaderProps) {
 
         <button
           type="button"
+          onClick={onLeave}
           className="rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-white/70 transition hover:border-gold/28 hover:bg-gold/10 hover:text-gold"
         >
           Leave

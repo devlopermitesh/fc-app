@@ -51,7 +51,7 @@ const userRecord:AuthenticatedUser={
 await redis.set(`user:${userId}`,userRecord,{ex:env.SESSION_TTL_SECONDS ?? 1600})
 await redis.set(`session:${sessionToken}`,{userId,createdAt:now},{ex:env.SESSION_TTL_SECONDS ?? 1600})
 const cookieStore=await cookies()
-cookieStore.set(env.SESSION_COOKIE_NAME ?? "fantasy_chat",sessionToken,{
+cookieStore.set(env.SESSION_COOKIE_NAME ?? "fantasychat_session",sessionToken,{
   httpOnly:true,
   sameSite:"lax",
   secure:process.env.NODE_ENV ==='production',
