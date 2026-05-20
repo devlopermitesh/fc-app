@@ -53,7 +53,6 @@ await redis.set(`session:${sessionToken}`,{userId,createdAt:now},{ex:env.SESSION
 const cookieStore=await cookies()
 cookieStore.set(env.SESSION_COOKIE_NAME ?? "fantasychat_session",sessionToken,{
   httpOnly:true,
-  sameSite:"lax",
   secure:process.env.NODE_ENV ==='production',
   path:'/',
   maxAge:env.SESSION_TTL_SECONDS
